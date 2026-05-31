@@ -1,5 +1,6 @@
 import pandas as pd
 from typing import Dict, Any, List, Set
+from services.logger import logger
 
 class DataValidator:
     def __init__(self, target_columns: List[str] = None):
@@ -11,6 +12,7 @@ class DataValidator:
         Validate a loaded DataFrame before transformation.
         Returns a dictionary representing the validation report.
         """
+        logger.info(f"Running data validation on sheet with {len(df)} rows.")
         report = {
             "is_valid": True,
             "errors": [],
@@ -25,6 +27,7 @@ class DataValidator:
         if df.empty:
             report["is_valid"] = False
             report["errors"].append("The Excel file sheet contains no data.")
+            logger.error("Validation error: Sheet is empty.")
             return report
 
         # 2. Check for duplicate columns in raw file
@@ -32,7 +35,9 @@ class DataValidator:
         if len(raw_cols) != len(set(raw_cols)):
             duplicates = set([c for c in raw_cols if raw_cols.count(c) > 1])
             report["duplicate_columns"] = list(duplicates)
-            report["warnings"].append(f"Duplicate columns detected in input file: {', '.join(duplicates)}")
+            msg = f"Duplicate columns detected in input file: {', '.join(duplicates)}"
+            report["warnings"].append(msg)
+            logger.warning(f"Validation warning: {msg}")
 
         # 3. Identify mapped columns and find missing target columns
         mapped_targets = set()
@@ -47,9 +52,9 @@ class DataValidator:
         if missing_targets:
             report["is_valid"] = False
             report["missing_expected_columns"] = missing_targets
-            report["errors"].append(
-                f"Missing required columns. Could not resolve mappings for: {', '.join(missing_targets)}"
-            )
+            msg = f"Missing required columns. Could not resolve mappings for: {', '.join(missing_targets)}"
+            report["errors"].append(msg)
+            logger.error(f"Validation error: {msg}")
 
         # 4. Check for unknown/unstandardized statuses if 'Testcase Status' column can be resolved
         status_col = None
@@ -68,8 +73,9 @@ class DataValidator:
             
             if unknown_vals:
                 report["unknown_statuses"] = unknown_vals
-                report["warnings"].append(
-                    f"Found unstandardized or raw statuses: {', '.join(unknown_vals)}"
-                )
+                msg = f"Found unstandardized or raw statuses: {', '.join(unknown_vals)}"
+                report["warnings"].append(msg)
+                logger.warning(f"Validation warning: {msg}")
 
+        logger.info(f"Validation completed. Is valid: {report['is_valid']}. Errors: {len(report['errors'])}, Warnings: {len(report['warnings'])}")
         return report

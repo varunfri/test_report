@@ -3,6 +3,7 @@ from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 from openpyxl.utils import get_column_letter
 import io
 from typing import Union, IO
+from services.logger import logger
 
 class DataExporter:
     @staticmethod
@@ -10,7 +11,9 @@ class DataExporter:
         """
         Generate pivot table statistics: Region vs Status count.
         """
+        logger.info("Generating pivot summary statistics...")
         if df.empty:
+            logger.warning("Dataframe is empty. Returning basic statistics template.")
             return pd.DataFrame(columns=["Region"])
         
         # Create a pivot table: index is Region, columns are unique Statuses
@@ -32,6 +35,7 @@ class DataExporter:
             totals[col] = pivot[col].sum()
             
         pivot = pd.concat([pivot, pd.DataFrame([totals])], ignore_index=True)
+        logger.info(f"Summary pivot generated. Regions counted: {len(pivot) - 1}")
         return pivot
 
     @classmethod
@@ -39,6 +43,7 @@ class DataExporter:
         """
         Export consolidated DataFrame into styled regional sheets and a summary pivot.
         """
+        logger.info(f"Starting Excel workbook export with {len(df)} rows...")
         # Create statistics sheet
         stats_df = cls.generate_pivot_statistics(df)
         

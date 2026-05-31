@@ -1,0 +1,5 @@
+{
+  "ollama_host": "http://localhost:11434",
+  "use_ai": true,
+  "selected_model": "gemma3:latest"
+}

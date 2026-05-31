@@ -1,6 +1,7 @@
 import requests
 import json
 from typing import List, Dict, Any, Tuple
+from services.logger import logger
 
 class OllamaMapper:
     def __init__(self, host: str = "http://localhost:11434", default_model: str = "llama3"):
@@ -13,13 +14,17 @@ class OllamaMapper:
         Returns a tuple of (is_connected, available_models).
         """
         try:
-            response = requests.get(f"{self.host}/api/tags", timeout=3.0)
+            logger.info(f"Checking connection to Ollama at {self.host}...")
+            response = requests.get(f"{self.host}/api/tags", timeout=8.0)
             if response.status_code == 200:
                 data = response.json()
                 models = [model["name"] for model in data.get("models", [])]
+                logger.info(f"Ollama connected. Available models: {models}")
                 return True, models
+            logger.warning(f"Ollama connected but returned status code: {response.status_code}")
             return False, []
-        except Exception:
+        except Exception as e:
+            logger.error(f"Ollama connection check failed: {str(e)}")
             return False, []
 
     def get_column_mappings(
@@ -33,6 +38,7 @@ class OllamaMapper:
         Uses JSON mode to guarantee a clean structured response.
         """
         model_name = model or self.default_model
+        logger.info(f"Requesting AI column mappings using model '{model_name}' for columns: {source_cols}")
         
         prompt = f"""
 You are an expert data migration assistant. Your task is to match raw Excel column names to a standardized schema.
@@ -82,11 +88,13 @@ Respond ONLY with valid JSON.
                 for src, tgt in mappings.items():
                     if src in source_cols and tgt in target_cols:
                         validated_mappings[src] = tgt
+                logger.info(f"AI suggested column mappings: {validated_mappings}")
                 return validated_mappings
                 
+            logger.warning(f"AI mapping API returned status code: {response.status_code}")
             return {}
         except Exception as e:
-            # Silent fallback, calling service can handle logging/warnings
+            logger.error(f"AI mapping API request failed: {str(e)}")
             return {}
 
     def get_status_mappings(
@@ -100,6 +108,7 @@ Respond ONLY with valid JSON.
         Uses JSON mode.
         """
         model_name = model or self.default_model
+        logger.info(f"Requesting AI status mappings using model '{model_name}' for statuses: {raw_statuses}")
         
         prompt = f"""
 You are a data validation assistant. Your task is to map unstandardized spreadsheet cell values to a list of allowed standard statuses.
@@ -145,8 +154,61 @@ Respond ONLY with valid JSON.
                 for src, tgt in mappings.items():
                     if tgt in standard_statuses:
                         validated_mappings[str(src)] = tgt
+                logger.info(f"AI suggested status mappings: {validated_mappings}")
                 return validated_mappings
                 
+            logger.warning(f"AI status mapping API returned status code: {response.status_code}")
             return {}
-        except Exception:
+        except Exception as e:
+            logger.error(f"AI status mapping API request failed: {str(e)}")
             return {}
+
+    def query_report(self, df: pd.DataFrame, question: str, model: str = None) -> str:
+        """
+        Queries the Ollama model about the data inside the provided DataFrame.
+        """
+        model_name = model or self.default_model
+        logger.info(f"AI query over report data using model '{model_name}'. Question: '{question}'")
+        
+        # Convert DataFrame to CSV string (safe and doesn't require tabulate)
+        if len(df) > 100:
+            data_str = df.head(100).to_csv(index=False) + "\n\n(Truncated to first 100 rows)"
+        else:
+            data_str = df.to_csv(index=False)
+            
+        prompt = f"""
+You are an expert test validation and data analyst. You are provided with a consolidated test execution report containing NA and Blocked test cases across multiple regions.
+
+Consolidated Report Data (CSV format):
+{data_str}
+
+User Question: {question}
+
+Instruction:
+Analyze the data above and provide a clear, factual, and concise answer to the user's question. If the data does not contain the information needed to answer, state it clearly. Do not make up any information.
+"""
+        try:
+            response = requests.post(
+                f"{self.host}/api/generate",
+                json={
+                    "model": model_name,
+                    "prompt": prompt,
+                    "stream": False,
+                    "options": {
+                        "temperature": 0.2
+                    }
+                },
+                timeout=25.0
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                answer = result.get("response", "").strip()
+                logger.info("AI query answered successfully.")
+                return answer
+                
+            logger.warning(f"AI query API returned status code: {response.status_code}")
+            return "Error: Remote Ollama server returned a non-200 status code."
+        except Exception as e:
+            logger.error(f"AI query request failed: {str(e)}")
+            return f"Error: Failed to communicate with Ollama server: {str(e)}"

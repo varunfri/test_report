@@ -26,7 +26,8 @@ test_report/
 │   ├── transformer.py         # Mappings, status filters, and metadata injection
 │   ├── merger.py              # DataFrame concatenation
 │   ├── exporter.py            # Styled Excel generator (regional tabs, custom colors)
-│   └── confluence.py          # Confluence Storage Format XHTML and HTML generator
+│   ├── confluence.py          # Confluence Storage Format XHTML and HTML generator
+│   └── logger.py              # Centralized logging service (writes to console and output/app.log)
 │
 ├── llm/                       # Local AI integration
 │   └── column_mapper.py       # Local Ollama REST API interface

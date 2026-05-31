@@ -1,5 +1,6 @@
 import pandas as pd
 from typing import Dict, Any, List, Set
+from services.logger import logger
 
 class DataTransformer:
     @staticmethod
@@ -16,6 +17,9 @@ class DataTransformer:
         """
         Apply mappings, value standardization, status filtering, and inject metadata columns.
         """
+        logger.info(f"Transforming data for region: {region} (Release: {release}, Execution Date: {execution_date})")
+        logger.info(f"Initial row count: {len(df)}")
+        
         # Create a deep copy to avoid modifying the original dataframe
         df_transformed = df.copy()
 
@@ -37,9 +41,11 @@ class DataTransformer:
 
         # 1.5 Filter by seq column if present (only keep rows where seq == 1)
         if "seq" in df_transformed.columns:
+            before_seq_filter = len(df_transformed)
             df_transformed["seq_temp"] = df_transformed["seq"].astype(str).str.strip().str.replace(".0", "", regex=False)
             df_transformed = df_transformed[df_transformed["seq_temp"] == "1"]
             df_transformed = df_transformed.drop(columns=["seq_temp"])
+            logger.info(f"Deduplicated via 'seq' column. Kept {len(df_transformed)} out of {before_seq_filter} rows (seq=1).")
 
         # 2. Standardize column values for Testcase Status
         status_value_map = value_mapping.get("Testcase Status", {})
@@ -54,7 +60,9 @@ class DataTransformer:
 
         # 3. Filter rows based on target statuses (if allowed_statuses is provided)
         if allowed_statuses:
+            before_status_filter = len(df_transformed)
             df_transformed = df_transformed[df_transformed["Testcase Status"].isin(allowed_statuses)]
+            logger.info(f"Filtered by allowed statuses {allowed_statuses}. Kept {len(df_transformed)} out of {before_status_filter} rows.")
 
         # 4. Inject metadata columns
         df_transformed["Region"] = region
@@ -73,4 +81,5 @@ class DataTransformer:
                     all_cols.insert(0, col)
             df_transformed = df_transformed[all_cols]
 
+        logger.info(f"Transformation complete for region {region}. Final transformed row count: {len(df_transformed)}")
         return df_transformed

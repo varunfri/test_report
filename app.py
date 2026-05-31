@@ -4,6 +4,7 @@ import yaml
 import os
 import plotly.express as px
 from datetime import datetime
+import json
 
 # Import local services
 from services.loader import FileLoader
@@ -11,11 +12,52 @@ from services.validator import DataValidator
 from services.transformer import DataTransformer
 from services.merger import DataMerger
 from services.exporter import DataExporter
+import importlib
+import llm.column_mapper
+importlib.reload(llm.column_mapper)
 from llm.column_mapper import OllamaMapper
+from services.logger import logger
+
+# Caching connection check to prevent UI latency with slow or offline remote servers
+@st.cache_data(ttl=15)
+def cached_check_connection(host: str):
+    mapper = OllamaMapper(host=host)
+    return mapper.check_connection()
+
+# Helper function to load Ollama session config safely across refreshes
+def load_ollama_config() -> dict:
+    config_file = "config/ollama_config.json"
+    default_config = {
+        "ollama_host": "http://localhost:11434",
+        "use_ai": False,
+        "selected_model": None
+    }
+    if os.path.exists(config_file):
+        try:
+            with open(config_file, "r") as f:
+                return json.load(f) or default_config
+        except Exception:
+            return default_config
+    return default_config
+
+# Helper function to save Ollama session config
+def save_ollama_config(host: str, use_ai: bool, model: str = None):
+    config_file = "config/ollama_config.json"
+    os.makedirs("config", exist_ok=True)
+    try:
+        with open(config_file, "w") as f:
+            json.dump({
+                "ollama_host": host,
+                "use_ai": use_ai,
+                "selected_model": model
+            }, f, indent=2)
+    except Exception as e:
+        logger.error(f"Failed to save Ollama config: {e}")
+
 
 # Page layout & visual setup
 st.set_page_config(
-    page_title="Regional Excel Consolidator",
+    page_title="NA, Blocked Report Generator",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -70,7 +112,7 @@ def load_yaml_config(file_path: str, default_data: dict) -> dict:
 # Main application orchestrator
 def main():
     # Header Section
-    st.markdown('<div class="main-title">Regional Excel Consolidator</div>', unsafe_allow_html=True)
+    st.markdown('<div class="main-title">NA, Blocked Report Generator</div>', unsafe_allow_html=True)
     st.markdown('<div class="subtitle">Standardize, validate, and merge regional test execution reports using custom transformation rules and Ollama AI.</div>', unsafe_allow_html=True)
 
     # 1. Load Configurations
@@ -126,30 +168,41 @@ def main():
         help="If checked, retains extra columns from source sheets alongside target schema columns."
     )
 
+    # Load persisted Ollama parameters
+    ollama_config = load_ollama_config()
+    saved_host = ollama_config.get("ollama_host", "http://localhost:11434")
+    saved_use_ai = ollama_config.get("use_ai", False)
+    saved_model = ollama_config.get("selected_model", None)
+
     # Ollama AI Configuration
     st.sidebar.markdown("---")
     st.sidebar.header("Ollama AI Assistant")
     
-    ollama_host = st.sidebar.text_input("Ollama Host URL", value="http://localhost:11434")
+    ollama_host = st.sidebar.text_input("Ollama Host URL", value=saved_host)
     
     # Initialize Ollama Mapper
     ollama_mapper = OllamaMapper(host=ollama_host)
     
-    # Check Ollama connection status automatically
-    is_connected, loaded_models = ollama_mapper.check_connection()
+    # Check Ollama connection status automatically (cached)
+    is_connected, loaded_models = cached_check_connection(ollama_host)
     
     # Deduplicate models
     loaded_models = list(dict.fromkeys(loaded_models))
     
+    default_model_index = 0
+    if saved_model and saved_model in loaded_models:
+        default_model_index = loaded_models.index(saved_model)
+        
     if is_connected:
         st.sidebar.success("🟢 Ollama Connected")
         if loaded_models:
             selected_model = st.sidebar.selectbox(
                 "Ollama Model", 
                 options=loaded_models,
+                index=default_model_index,
                 help="Only models currently installed on your local Ollama system are shown."
             )
-            use_ai = st.sidebar.toggle("Enable AI-Assisted Mapping", value=False)
+            use_ai = st.sidebar.toggle("Enable AI-Assisted Mapping", value=saved_use_ai)
         else:
             st.sidebar.warning("⚠️ No models found in your local Ollama system. Please install a model (e.g. running 'ollama pull llama3' in your terminal).")
             selected_model = None
@@ -160,11 +213,46 @@ def main():
         selected_model = None
         use_ai = False
 
+    # Save Ollama parameters if they changed
+    if (ollama_host != saved_host or 
+        use_ai != saved_use_ai or 
+        selected_model != saved_model):
+        save_ollama_config(ollama_host, use_ai, selected_model)
+
+    # Sidebar Quick AI Query Widget
+    if is_connected and "consolidated_data" in st.session_state and st.session_state.consolidated_data is not None and not st.session_state.consolidated_data.empty:
+        st.sidebar.markdown("---")
+        with st.sidebar.expander("💬 Quick AI Query", expanded=True):
+            sidebar_q = st.sidebar.text_input(
+                "Ask a quick question:",
+                placeholder="e.g. Total blocked in CN?",
+                key="sidebar_query_input"
+            )
+            if st.sidebar.button("Query AI", key="sidebar_query_button", use_container_width=True):
+                if sidebar_q.strip():
+                    with st.sidebar.spinner("Querying..."):
+                        sidebar_ans = ollama_mapper.query_report(
+                            df=st.session_state.consolidated_data,
+                            question=sidebar_q.strip(),
+                            model=selected_model
+                        )
+                        st.session_state.sidebar_chat_history = {
+                            "question": sidebar_q.strip(),
+                            "answer": sidebar_ans
+                        }
+                else:
+                    st.sidebar.warning("Please enter a question.")
+            
+            if "sidebar_chat_history" in st.session_state:
+                st.sidebar.markdown(f"**Q:** *{st.session_state.sidebar_chat_history['question']}*")
+                st.sidebar.info(st.session_state.sidebar_chat_history['answer'])
+
     # Main Tabs
-    tab_consolidator, tab_configs, tab_statistics = st.tabs([
+    tab_consolidator, tab_configs, tab_statistics, tab_assistant = st.tabs([
         "📁 File Consolidator", 
         "⚙️ Rule Configurations", 
-        "📊 Pivot & Visual Metrics"
+        "📊 Pivot & Visual Metrics",
+        "🤖 AI Report Assistant"
     ])
 
     # Tab 1: File Consolidator Dashboard
@@ -283,12 +371,14 @@ def main():
             # Run button
             st.markdown("---")
             if st.button("Process & Consolidate Files", type="primary"):
+                logger.info(f"User clicked 'Process & Consolidate Files'. Total files to process: {len(file_meta)} (AI Enabled: {use_ai})")
                 processed_dfs = []
                 validation_results = []
                 
                 with st.spinner("Processing regional files..."):
                     for file_info in file_meta:
                         try:
+                            logger.info(f"Starting processing for file: {file_info['filename']} (Region: {file_info['region']}, Sheet: {file_info['sheet']})")
                             # 1. Load Data
                             df_raw = FileLoader.load_sheet(
                                 file_info["file_obj"], 
@@ -347,6 +437,9 @@ def main():
                                     keep_all_columns=keep_columns_mode
                                 )
                                 processed_dfs.append(df_transformed)
+                                logger.info(f"File {file_info['filename']} transformed successfully.")
+                            else:
+                                logger.error(f"File {file_info['filename']} failed validation: {val_report['errors']}")
                                 
                             val_report["region"] = file_info["region"]
                             val_report["filename"] = file_info["filename"]
@@ -354,6 +447,7 @@ def main():
                             validation_results.append(val_report)
                             
                         except Exception as e:
+                            logger.error(f"Critical processing failure on {file_info['filename']}: {str(e)}", exc_info=True)
                             st.error(f"Critical processing failure on {file_info['filename']}: {str(e)}")
                 
                 # Save validation results and processed dataframes to session state
@@ -361,9 +455,11 @@ def main():
                 if processed_dfs:
                     st.session_state.consolidated_data = DataMerger.merge(processed_dfs)
                     st.session_state.process_success = True
+                    logger.info("Consolidation run finished successfully.")
                 else:
                     st.session_state.consolidated_data = None
                     st.session_state.process_success = False
+                    logger.warning("Consolidation run finished with no valid transformed records.")
                 
                 # Force rerun to transition to persistent display state
                 st.rerun()
@@ -566,6 +662,79 @@ def main():
                 
         else:
             st.warning("Please upload and process files in the File Consolidator tab first to view statistics.")
+
+    # Tab 4: AI Report Assistant
+    with tab_assistant:
+        st.subheader("🤖 AI Report Assistant")
+        st.write("Query and analyze your consolidated test report using natural language. Ask questions about blockers, testers, models, or regional trends.")
+        
+        if "consolidated_data" not in st.session_state or st.session_state.consolidated_data is None or st.session_state.consolidated_data.empty:
+            st.info("💡 Please upload and process regional reports in the **File Consolidator** tab to enable the AI Report Assistant.")
+        elif not is_connected:
+            st.error("🔴 Ollama Offline / Not Exposed")
+            st.info("Start your local Ollama server to enable conversational analysis over your consolidated reports.")
+        else:
+            # Initialize conversation state
+            if "assistant_chat_history" not in st.session_state:
+                st.session_state.assistant_chat_history = []
+                
+            # Helper Quick Questions
+            st.markdown("##### 💡 Quick Queries")
+            quick_cols = st.columns(3)
+            q1 = "Summarize the primary blockers across all regions."
+            q2 = "Which models have the highest number of Blocked cases?"
+            q3 = "Identify which testers are assigned to NA cases and where."
+            
+            clicked_q = None
+            if quick_cols[0].button(q1, use_container_width=True):
+                clicked_q = q1
+            if quick_cols[1].button(q2, use_container_width=True):
+                clicked_q = q2
+            if quick_cols[2].button(q3, use_container_width=True):
+                clicked_q = q3
+                
+            # Input Text Box
+            st.markdown("##### 💬 Custom Query")
+            custom_q = st.text_input(
+                "Enter your question here:",
+                placeholder="e.g. List all testcases in the US region that are Blocked.",
+                key="assistant_custom_query_input"
+            )
+            
+            col_btn_clear, col_btn_ask = st.columns([1, 4])
+            
+            if col_btn_clear.button("Clear Chat", use_container_width=True):
+                st.session_state.assistant_chat_history = []
+                st.rerun()
+                
+            ask_clicked = col_btn_ask.button("Ask AI Assistant", type="primary", use_container_width=True)
+            
+            # Resolve active question
+            active_q = clicked_q or (custom_q.strip() if ask_clicked and custom_q.strip() else None)
+            
+            if active_q:
+                with st.spinner("AI Assistant is analyzing the consolidated report..."):
+                    answer = ollama_mapper.query_report(
+                        df=st.session_state.consolidated_data,
+                        question=active_q,
+                        model=selected_model
+                    )
+                    # Append to history
+                    st.session_state.assistant_chat_history.append({
+                        "question": active_q,
+                        "answer": answer,
+                        "timestamp": datetime.now().strftime("%H:%M:%S")
+                    })
+                    st.rerun()
+                    
+            # Display conversation history
+            if st.session_state.assistant_chat_history:
+                st.markdown("---")
+                st.markdown("##### 💬 Conversation History")
+                for i, item in enumerate(reversed(st.session_state.assistant_chat_history)):
+                    st.markdown(f"**👤 Question [{item['timestamp']}]:** {item['question']}")
+                    st.info(item["answer"])
+                    st.markdown("---")
 
 if __name__ == "__main__":
     main()

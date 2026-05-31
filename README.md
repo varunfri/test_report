@@ -1,4 +1,4 @@
-# NA, BlockedConsolidation & Confluence Collaboration Tool
+# NA, Blocked Consolidation & Confluence Collaboration Tool
 
 A modular, configuration-driven Python application with a Streamlit user interface and local Ollama AI assistant. It standardizes, validates, and merges regional Excel test reports, splitting output records into dedicated worksheets per region with dynamic status cell coloring, and generating copyable Confluence Deck/Card/Expand macro collaboration layouts.
 
@@ -10,7 +10,11 @@ A modular, configuration-driven Python application with a Streamlit user interfa
 test_report/
 ├── app.py                     # Primary Streamlit Dashboard
 ├── requirements.txt           # Python dependencies list
+├── run.command                # Double-clickable macOS launcher script
+├── run.bat                    # Double-clickable Windows batch launcher
+├── run.sh                     # Generic Linux shell launcher script
 ├── .gitignore                 # Excluded directories and metadata
+
 │
 ├── config/                    # Processing Configurations
 │   ├── mappings.yaml          # Column maps and status translations
@@ -45,25 +49,31 @@ test_report/
 
 ## Getting Started
 
-### 1. Set Up Virtual Environment & Dependencies
+### Simple Launcher (Recommended for Non-Technical Users)
 
-Initialize and activate your virtual environment:
+To run the application and set up the environment automatically, execute the appropriate file for your platform:
 
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-```
+- **macOS**: Double-click `run.command` in Finder.
+- **Windows**: Double-click `run.bat` in File Explorer.
+- **Linux**: Execute `./run.sh` in the terminal.
 
-### 2. Launch the Streamlit Web Application
+These scripts automatically verify if Python is installed, configure a private virtual environment (`.venv`), install the necessary libraries from `requirements.txt`, and start the Streamlit web dashboard. Once started, open **`http://localhost:8501`** in your browser to interact with the interface.
 
-Run the Streamlit server from the workspace root:
+### Manual Terminal Method (For Developers)
 
-```bash
-streamlit run app.py
-```
+If you prefer to configure and run the application manually:
 
-Open **`http://localhost:8501`** in your browser to interact with the dashboard.
+1. Initialize and activate the virtual environment:
+   ```bash
+   python3 -m venv .venv
+   source .venv/bin/activate
+   pip install -r requirements.txt
+   ```
+2. Run the Streamlit server from the workspace root:
+   ```bash
+   streamlit run app.py
+   ```
+3. Open **`http://localhost:8501`** in your browser to interact with the dashboard.
 
 ---
 

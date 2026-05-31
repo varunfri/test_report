@@ -131,24 +131,34 @@ def main():
     st.sidebar.header("Ollama AI Assistant")
     
     ollama_host = st.sidebar.text_input("Ollama Host URL", value="http://localhost:11434")
-    use_ai = st.sidebar.toggle("Enable AI-Assisted Mapping", value=False)
     
     # Initialize Ollama Mapper
     ollama_mapper = OllamaMapper(host=ollama_host)
-    available_models = ["llama3", "mistral", "phi3", "gemma"]
     
-    if use_ai:
-        is_connected, loaded_models = ollama_mapper.check_connection()
-        if is_connected:
-            st.sidebar.success("Ollama service connected.")
-            if loaded_models:
-                available_models = loaded_models
+    # Check Ollama connection status automatically
+    is_connected, loaded_models = ollama_mapper.check_connection()
+    
+    # Deduplicate models
+    loaded_models = list(dict.fromkeys(loaded_models))
+    
+    if is_connected:
+        st.sidebar.success("🟢 Ollama Connected")
+        if loaded_models:
+            selected_model = st.sidebar.selectbox(
+                "Ollama Model", 
+                options=loaded_models,
+                help="Only models currently installed on your local Ollama system are shown."
+            )
+            use_ai = st.sidebar.toggle("Enable AI-Assisted Mapping", value=False)
         else:
-            st.sidebar.error("Could not connect to Ollama. Fallback mappings will be used.")
-            
-        selected_model = st.sidebar.selectbox("Ollama Model", options=available_models)
+            st.sidebar.warning("⚠️ No models found in your local Ollama system. Please install a model (e.g. running 'ollama pull llama3' in your terminal).")
+            selected_model = None
+            use_ai = False
     else:
-        selected_model = "llama3"
+        st.sidebar.error("🔴 Ollama Offline / Not Exposed")
+        st.sidebar.info("Ollama is not running or is not exposed at the specified URL. Start Ollama locally or check your connection parameters.")
+        selected_model = None
+        use_ai = False
 
     # Main Tabs
     tab_consolidator, tab_configs, tab_statistics = st.tabs([

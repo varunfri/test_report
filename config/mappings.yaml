@@ -1,0 +1,21 @@
+column_mapping:
+  # Standard Mappings to Target Schema
+  "Testcase ID": "Testcase ID"
+  "Test_ID": "Testcase ID"
+  "TC_ID": "Testcase ID"
+  "Test Case": "Testcase ID"
+  "Testcase Status": "Testcase Status"
+  "Status": "Testcase Status"
+  "Models": "Models"
+  "Function": "Function"
+  "Tester": "Tester"
+  "Comment": "Comment"
+
+value_mapping:
+  Testcase Status:
+    "N/A": "NA"
+    "NA": "NA"
+    "Not Applicable": "NA"
+    "Blocked": "Blocked"
+    "BLOCK": "Blocked"
+    "Dependency": "Blocked"

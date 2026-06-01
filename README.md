@@ -103,7 +103,7 @@ Outputs are generated inside the `output/` directory as `Final_Report.xlsx`, `Co
 
 ### 1. Excel Exporter Features (`services/exporter.py`)
 
-- **Regional Worksheets**: The exporter splits consolidated data into separate tabs based on region (`US`, `CN`, `EU`, `JP`) alongside a primary `Statistics` pivot summary worksheet.
+- **Global & Regional Worksheets**: The exporter splits consolidated data into separate tabs based on region (`US`, `CN`, `EU`, `JP`), alongside a primary `Statistics` pivot summary worksheet and two consolidated global status worksheets: `NA of All regions` (containing all NA rows across all regions) and `blocked of all regions` (containing all Blocked rows across all regions).
 - **Dynamic Cell Styling**: Cells in the `Testcase Status` column are dynamically highlighted based on status:
   - **`Blocked`**: Soft red fill (`#FEE2E2`) and dark red bold font (`#991B1B`).
   - **`NA`**: Soft blue fill (`#DBEAFE`) and dark blue bold font (`#1E40AF`).
@@ -114,7 +114,7 @@ Outputs are generated inside the `output/` directory as `Final_Report.xlsx`, `Co
 Generates structured XHTML layout to paste directly into the Confluence page editor:
 
 - **Deck & Card Macros**: Outer-level grouping with cards labeled **`NA`** and **`Blocked`**.
-- **Native Expand Macros**: Nested region-level tabs (e.g. `Expand (US Region)`) containing formatted HTML data tables listing testcase IDs, models, functions, testers, and comments.
+- **Native Expand Macros**: Nested region-level tabs (e.g. `Expand (US Region)`) containing formatted HTML data tables listing testcase IDs, modules, functions, testers, and comments.
 
 ### 3. Local Ollama AI Assistant (`llm/column_mapper.py`)
 

@@ -28,12 +28,24 @@ def run_verification():
     print(f"Allowed target statuses: {allowed_statuses}")
 
     # 2. Regional Files metadata
-    files_meta = [
-        {"path": "report/un_filtered_report/us_report.xlsx", "region": "US"},
-        {"path": "report/un_filtered_report/cn_report.xlsx", "region": "CN"},
-        {"path": "report/un_filtered_report/eu_report.xlsx", "region": "EU"},
-        {"path": "report/un_filtered_report/jp_report.xlsx", "region": "JP"}
-    ]
+    unfiltered_dir = "report/un_filtered_report"
+    files_meta = []
+    
+    if os.path.exists(unfiltered_dir):
+        for f in sorted(os.listdir(unfiltered_dir)):
+            if f.endswith(".xlsx") and not f.startswith("~$"):
+                path = os.path.join(unfiltered_dir, f)
+                # Map region based on filename codes
+                region = "UNKNOWN"
+                if ".AUS" in f or "us_" in f.lower():
+                    region = "US"
+                elif ".AWZ" in f or "cn_" in f.lower():
+                    region = "CN"
+                elif ".AEU" in f or "eu_" in f.lower():
+                    region = "EU"
+                elif ".AJL" in f or "jp_" in f.lower():
+                    region = "JP"
+                files_meta.append({"path": path, "region": region})
     
     processed_dfs = []
     

@@ -35,6 +35,9 @@ class DataExporter:
             totals[col] = pivot[col].sum()
             
         pivot = pd.concat([pivot, pd.DataFrame([totals])], ignore_index=True)
+        if not pivot.empty:
+            sl_no = list(range(1, len(pivot))) + [""]
+            pivot.insert(0, "Sl.No.", sl_no)
         logger.info(f"Summary pivot generated. Regions counted: {len(pivot) - 1}")
         return pivot
 
@@ -60,9 +63,29 @@ class DataExporter:
             # 1. Write the Summary statistics sheet first
             stats_df.to_excel(writer, sheet_name="Statistics", index=False)
             
+            # 1.1 Write NA of All regions sheet containing all regions
+            df_na = df[df["Testcase Status"] == "NA"].copy() if not df.empty else pd.DataFrame(columns=df.columns)
+            if not df_na.empty:
+                df_na.insert(0, "Sl.No.", range(1, len(df_na) + 1))
+            else:
+                df_na.insert(0, "Sl.No.", [])
+            df_na.to_excel(writer, sheet_name="NA of All regions", index=False)
+            
+            # 1.2 Write blocked of all regions sheet containing all regions
+            df_blocked = df[df["Testcase Status"] == "Blocked"].copy() if not df.empty else pd.DataFrame(columns=df.columns)
+            if not df_blocked.empty:
+                df_blocked.insert(0, "Sl.No.", range(1, len(df_blocked) + 1))
+            else:
+                df_blocked.insert(0, "Sl.No.", [])
+            df_blocked.to_excel(writer, sheet_name="blocked of all regions", index=False)
+            
             # 2. Write each region's data into its own separate sheet
             for region in regions:
-                df_region = df[df["Region"] == region]
+                df_region = df[df["Region"] == region].copy()
+                if not df_region.empty:
+                    df_region.insert(0, "Sl.No.", range(1, len(df_region) + 1))
+                else:
+                    df_region.insert(0, "Sl.No.", [])
                 df_region.to_excel(writer, sheet_name=str(region), index=False)
             
             # Access workbook and sheets to apply premium styling
@@ -97,7 +120,7 @@ class DataExporter:
             align_left = Alignment(horizontal="left", vertical="center")
             
             # Formatting loop
-            ws_names = ["Statistics"] + [str(reg) for reg in regions]
+            ws_names = ["Statistics", "NA of All regions", "blocked of all regions"] + [str(reg) for reg in regions]
             for ws_name in ws_names:
                 ws = workbook[ws_name]
                 
@@ -123,7 +146,7 @@ class DataExporter:
                         if is_total_row:
                             cell.font = total_font
                             cell.border = double_bottom_border
-                            if col_idx == 1:
+                            if col_idx == 2:
                                 cell.alignment = align_left
                             else:
                                 cell.alignment = align_center
@@ -134,13 +157,14 @@ class DataExporter:
                             # Alignment and dynamic cell styling logic
                             if not is_stats_sheet:
                                 # Align text-heavy and ID columns to left, metadata and status to center
-                                if col_idx in [2, 3, 4, 5, 7]:
+                                # Index mapping: 1=Sl.No, 2=Region, 3=Module, 4=Function, 5=Testcase ID, 6=Tester, 7=Testcase Status, 8=Comment
+                                if col_idx in [3, 4, 5, 6, 8]:
                                     cell.alignment = align_left
                                 else:
                                     cell.alignment = align_center
                                     
-                                # Apply status colors dynamically for Testcase Status (Column 6)
-                                if col_idx == 6:
+                                # Apply status colors dynamically for Testcase Status (Column 7)
+                                if col_idx == 7:
                                     val_str = str(cell.value).strip()
                                     if val_str == "Blocked":
                                         cell.fill = blocked_fill
@@ -149,8 +173,8 @@ class DataExporter:
                                         cell.fill = na_fill
                                         cell.font = na_font
                             else:
-                                # Statistics: Region is left, status counts are center
-                                if col_idx == 1:
+                                # Statistics: Region is left (Column 2), others are center
+                                if col_idx == 2:
                                     cell.alignment = align_left
                                 else:
                                     cell.alignment = align_center

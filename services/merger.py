@@ -11,7 +11,7 @@ class DataMerger:
         logger.info(f"Merging {len(dfs)} regional dataframes...")
         if not dfs:
             logger.warning("No dataframes provided to merge. Returning empty standard dataframe.")
-            return pd.DataFrame(columns=["Region", "Models", "Function", "Testcase ID", "Tester", "Testcase Status", "Comment"])
+            return pd.DataFrame(columns=["Region", "Module", "Function", "Testcase ID", "Tester", "Testcase Status", "Comment"])
         
         # Concatenate and reset index
         merged_df = pd.concat(dfs, ignore_index=True)

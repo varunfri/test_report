@@ -30,7 +30,7 @@ class DataTransformer:
         schema_defaults = {
             "Testcase ID": "Unknown",
             "Testcase Status": "Unknown",
-            "Models": "",
+            "Module": "",
             "Function": "",
             "Tester": "",
             "Comment": ""
@@ -40,12 +40,13 @@ class DataTransformer:
                 df_transformed[col] = default_val
 
         # 1.5 Filter by seq column if present (only keep rows where seq == 1)
-        if "seq" in df_transformed.columns:
+        seq_col = next((col for col in df_transformed.columns if str(col).lower() == "seq"), None)
+        if seq_col:
             before_seq_filter = len(df_transformed)
-            df_transformed["seq_temp"] = df_transformed["seq"].astype(str).str.strip().str.replace(".0", "", regex=False)
+            df_transformed["seq_temp"] = df_transformed[seq_col].astype(str).str.strip().str.replace(".0", "", regex=False)
             df_transformed = df_transformed[df_transformed["seq_temp"] == "1"]
             df_transformed = df_transformed.drop(columns=["seq_temp"])
-            logger.info(f"Deduplicated via 'seq' column. Kept {len(df_transformed)} out of {before_seq_filter} rows (seq=1).")
+            logger.info(f"Deduplicated via '{seq_col}' column. Kept {len(df_transformed)} out of {before_seq_filter} rows (seq=1).")
 
         # 2. Standardize column values for Testcase Status
         status_value_map = value_mapping.get("Testcase Status", {})
@@ -68,7 +69,7 @@ class DataTransformer:
         df_transformed["Region"] = region
 
         # 5. Column selection: Keep only target columns + metadata columns unless keep_all_columns is True
-        target_schema = ["Region", "Models", "Function", "Testcase ID", "Tester", "Testcase Status", "Comment"]
+        target_schema = ["Region", "Module", "Function", "Testcase ID", "Tester", "Testcase Status", "Comment"]
         if not keep_all_columns:
             # We filter down to exactly the target schema
             df_transformed = df_transformed[target_schema]

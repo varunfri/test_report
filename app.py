@@ -124,7 +124,8 @@ def main():
             "Test Case": "Testcase ID",
             "Testcase Status": "Testcase Status",
             "Status": "Testcase Status",
-            "Models": "Models",
+            "Module": "Module",
+            "Models": "Module",
             "Function": "Function",
             "Tester": "Tester",
             "Comment": "Comment"
@@ -594,7 +595,7 @@ def main():
             # Interactive add mapping
             with st.form("add_header_mapping_form"):
                 new_src = st.text_input("Raw Source Header Name (e.g. TC_Num)")
-                new_tgt = st.selectbox("Standard Target Mapping", options=["Testcase ID", "Testcase Status", "Models", "Function", "Tester", "Comment"])
+                new_tgt = st.selectbox("Standard Target Mapping", options=["Testcase ID", "Testcase Status", "Module", "Function", "Tester", "Comment"])
                 submit_map = st.form_submit_button("Add Mapping Rule")
                 if submit_map and new_src:
                     st.session_state.col_mapping[new_src.strip()] = new_tgt
@@ -666,7 +667,7 @@ def main():
     # Tab 4: AI Report Assistant
     with tab_assistant:
         st.subheader("🤖 AI Report Assistant")
-        st.write("Query and analyze your consolidated test report using natural language. Ask questions about blockers, testers, models, or regional trends.")
+        st.write("Query and analyze your consolidated test report using natural language. Ask questions about blockers, testers, modules, or regional trends.")
         
         if "consolidated_data" not in st.session_state or st.session_state.consolidated_data is None or st.session_state.consolidated_data.empty:
             st.info("💡 Please upload and process regional reports in the **File Consolidator** tab to enable the AI Report Assistant.")
@@ -682,7 +683,7 @@ def main():
             st.markdown("##### 💡 Quick Queries")
             quick_cols = st.columns(3)
             q1 = "Summarize the primary blockers across all regions."
-            q2 = "Which models have the highest number of Blocked cases?"
+            q2 = "Which modules have the highest number of Blocked cases?"
             q3 = "Identify which testers are assigned to NA cases and where."
             
             clicked_q = None

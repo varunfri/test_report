@@ -29,7 +29,7 @@ def main():
     for sheet in xls.sheet_names:
         if sheet != "Statistics":
             dfs.append(pd.read_excel(xls, sheet_name=sheet, keep_default_na=False))
-    df = pd.concat(dfs, ignore_index=True) if dfs else pd.DataFrame(columns=["Region", "Models", "Function", "Testcase ID", "Tester", "Testcase Status", "Comment"])
+    df = pd.concat(dfs, ignore_index=True) if dfs else pd.DataFrame(columns=["Region", "Module", "Function", "Testcase ID", "Tester", "Testcase Status", "Comment"])
     print(f"Loaded {len(df)} consolidated records from regional worksheets.")
 
     # 2. Generate XML Storage Format (Deck/Card/Expand)

@@ -15,8 +15,10 @@ class ConfluenceGenerator:
             '<table border="1" style="border-collapse: collapse; width: 100%; font-family: Segoe UI, sans-serif; font-size: 13px; border-color: #CBD5E1;">',
             '  <thead>',
             '    <tr style="background-color: #F8FAFC; color: #1E293B; font-weight: bold; text-align: left;">',
+            '      <th style="padding: 8px; text-align: center;">Sl.No.</th>',
+            '      <th style="padding: 8px; text-align: center;">Region</th>',
             '      <th style="padding: 8px;">Testcase ID</th>',
-            '      <th style="padding: 8px;">Models</th>',
+            '      <th style="padding: 8px;">Module</th>',
             '      <th style="padding: 8px;">Function</th>',
             '      <th style="padding: 8px;">Tester</th>',
             '      <th style="padding: 8px;">Comment</th>',
@@ -25,16 +27,19 @@ class ConfluenceGenerator:
             '  <tbody>'
         ]
         
-        for idx, row in df_subset.iterrows():
+        for idx, (_, row) in enumerate(df_subset.iterrows(), 1):
+            region = html.escape(str(row.get("Region", "")))
             tc_id = html.escape(str(row.get("Testcase ID", "")))
-            models = html.escape(str(row.get("Models", "")))
+            module = html.escape(str(row.get("Module", "")))
             func = html.escape(str(row.get("Function", "")))
             tester = html.escape(str(row.get("Tester", "")))
             comment = html.escape(str(row.get("Comment", "")))
             
             html_out.append(f'    <tr>')
+            html_out.append(f'      <td style="padding: 8px; text-align: center; color: #64748B;">{idx}</td>')
+            html_out.append(f'      <td style="padding: 8px; text-align: center; font-weight: 600; color: #0F172A;">{region}</td>')
             html_out.append(f'      <td style="padding: 8px; font-weight: 500; color: #0F172A;">{tc_id}</td>')
-            html_out.append(f'      <td style="padding: 8px; color: #475569;">{models}</td>')
+            html_out.append(f'      <td style="padding: 8px; color: #475569;">{module}</td>')
             html_out.append(f'      <td style="padding: 8px; color: #475569;">{func}</td>')
             html_out.append(f'      <td style="padding: 8px; color: #475569;">{tester}</td>')
             html_out.append(f'      <td style="padding: 8px; color: #475569;">{comment}</td>')

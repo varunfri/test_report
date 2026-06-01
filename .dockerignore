@@ -1,0 +1,26 @@
+# Ignore version control
+.git
+.gitignore
+
+# Ignore local python virtual environments and cache
+.venv
+venv
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Ignore local OS metadata
+.DS_Store
+
+# Ignore PyInstaller build and distribution directories
+dist/
+build/
+*.spec
+
+# Ignore local output, upload, and report files to keep image clean
+output/
+uploads/
+report/un_filtered_report/
+*.xlsx
+*.log

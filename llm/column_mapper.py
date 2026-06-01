@@ -2,7 +2,7 @@ import requests
 import json
 from typing import List, Dict, Any, Tuple
 from services.logger import logger
-
+import pandas as pd
 class OllamaMapper:
     def __init__(self, host: str = "http://localhost:11434", default_model: str = "llama3"):
         self.host = host.rstrip("/")

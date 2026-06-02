@@ -29,6 +29,7 @@ def build():
         f"--add-data=../config{sep}config",
         f"--add-data=../services{sep}services",
         f"--add-data=../llm{sep}llm",
+        f"--add-data=ui{sep}ui",
         "gui.py"
     ]
     

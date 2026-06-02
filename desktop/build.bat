@@ -5,7 +5,7 @@ echo ==================================================
 echo Compiling Standalone Offline Desktop Application...
 echo ==================================================
 
-:: Check if Python is installed
+REM Check if Python is installed
 python --version >nul 2>&1
 if %errorlevel% neq 0 (
     echo Error: Python is not installed or not added to your PATH.
@@ -14,9 +14,9 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
-:: Create virtual environment in parent directory if it does not exist
+REM Create virtual environment in parent directory if it does not exist
 if not exist "..\.venv" (
-    echo Setting up a private environment (.venv)...
+    echo Setting up a private environment .venv...
     python -m venv ..\.venv
     if %errorlevel% neq 0 (
         echo Error: Failed to create virtual environment.
@@ -25,7 +25,7 @@ if not exist "..\.venv" (
     )
 )
 
-:: Activate virtual environment
+REM Activate virtual environment
 call ..\.venv\Scripts\activate.bat
 if %errorlevel% neq 0 (
     echo Error: Failed to activate virtual environment.
@@ -33,7 +33,7 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
-:: Install dependencies
+REM Install dependencies
 echo Installing requirements and build dependencies...
 python -m pip install --upgrade pip
 pip install -r ..\requirements.txt
@@ -43,7 +43,7 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
-:: Run build script
+REM Run build script
 python build_exe.py
 if %errorlevel% neq 0 (
     echo Error: Standalone compilation failed.

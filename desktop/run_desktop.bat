@@ -5,7 +5,7 @@ echo ==================================================
 echo Starting Offline Desktop Report Generator Client...
 echo ==================================================
 
-:: Check if Python is installed
+REM Check if Python is installed
 python --version >nul 2>&1
 if %errorlevel% neq 0 (
     echo Error: Python is not installed or not added to your PATH.
@@ -14,9 +14,9 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
-:: Create virtual environment in parent directory if it does not exist
+REM Create virtual environment in parent directory if it does not exist
 if not exist "..\.venv" (
-    echo Setting up a private environment (.venv) in parent folder...
+    echo Setting up a private environment .venv in parent folder...
     python -m venv ..\.venv
     if %errorlevel% neq 0 (
         echo Error: Failed to create virtual environment.
@@ -25,7 +25,7 @@ if not exist "..\.venv" (
     )
 )
 
-:: Activate virtual environment
+REM Activate virtual environment
 call ..\.venv\Scripts\activate.bat
 if %errorlevel% neq 0 (
     echo Error: Failed to activate virtual environment.
@@ -33,7 +33,7 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
-:: Install dependencies
+REM Install dependencies
 echo Verifying and installing required packages (pandas, openpyxl, pyyaml, requests, ollama)...
 python -m pip install --upgrade pip
 pip install -r ..\requirements.txt

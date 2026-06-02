@@ -6,6 +6,16 @@ import threading
 import streamlit.web.cli as stcli
 import webview
 
+# Force Streamlit to run headlessly, bind only to loopback, and disable telemetry
+os.environ["STREAMLIT_SERVER_HEADLESS"] = "true"
+os.environ["STREAMLIT_SERVER_ADDRESS"] = "127.0.0.1"
+os.environ["STREAMLIT_BROWSER_GATHER_USAGE_STATS"] = "false"
+
+# Suppress console outputs for standard streams in packaged/frozen mode
+if getattr(sys, 'frozen', False):
+    sys.stdout = open(os.devnull, 'w')
+    sys.stderr = open(os.devnull, 'w')
+
 def find_free_port():
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.bind(('127.0.0.1', 0))
@@ -19,6 +29,7 @@ def run_streamlit_programmatic(app_path, port):
         "run",
         app_path,
         "--server.port", str(port),
+        "--server.address", "127.0.0.1",
         "--server.headless", "true",
         "--browser.gatherUsageStats", "false",
         "--global.developmentMode", "false"

@@ -179,7 +179,8 @@ def main():
     st.sidebar.markdown("---")
     st.sidebar.header("Ollama AI Assistant")
     
-    ollama_host = st.sidebar.text_input("Ollama Host URL", value=saved_host)
+    with st.sidebar.expander("⚙️ Local AI Connection Settings", expanded=False):
+        ollama_host = st.text_input("Local Service Address", value=saved_host, help="The loopback connection address of your local Ollama instance.")
     
     # Initialize Ollama Mapper
     ollama_mapper = OllamaMapper(host=ollama_host)

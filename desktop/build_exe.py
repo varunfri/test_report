@@ -29,10 +29,7 @@ def build():
         f"--add-data=../config{sep}config",
         f"--add-data=../services{sep}services",
         f"--add-data=../llm{sep}llm",
-        f"--add-data=../app.py{sep}.",
-        "--collect-all=streamlit",  # Collect all Streamlit web assets, hooks, and submodules
-        "--collect-all=webview",    # Collect all pywebview assets and dependencies
-        "desktop.py"
+        "gui.py"
     ]
     
     print("\n==================================================")

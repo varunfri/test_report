@@ -32,7 +32,7 @@ fi
 source ../.venv/bin/activate
 
 # Install/update dependencies
-echo "Verifying and installing required packages (pywebview, pandas, openpyxl)..."
+echo "Verifying and installing required packages (pandas, openpyxl, pyyaml, requests, ollama)..."
 pip install --upgrade pip
 pip install -r ../requirements.txt
 if [ $? -ne 0 ]; then
@@ -46,4 +46,4 @@ echo "=================================================="
 echo "Launching Standalone Desktop App..."
 echo "=================================================="
 
-python3 desktop.py
+python3 gui.py

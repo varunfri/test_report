@@ -34,7 +34,7 @@ if %errorlevel% neq 0 (
 )
 
 :: Install dependencies
-echo Verifying and installing required packages (pywebview, pandas, openpyxl)...
+echo Verifying and installing required packages (pandas, openpyxl, pyyaml, requests, ollama)...
 python -m pip install --upgrade pip
 pip install -r ..\requirements.txt
 if %errorlevel% neq 0 (
@@ -47,4 +47,4 @@ echo ==================================================
 echo Launching Standalone Desktop App...
 echo ==================================================
 
-python desktop.py
+python gui.py
